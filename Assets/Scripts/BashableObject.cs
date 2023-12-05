@@ -26,19 +26,23 @@ public class BashableObject : MonoBehaviour
         StartCoroutine(BashCooldown());
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnTriggerEnter(Collider other)
     {
-        if (collision.transform.CompareTag("Player"))
+        if (other.transform.CompareTag("Player"))
         {
-            collision.transform.GetComponent<PlayerController>().bashObject = this;
+            other.transform.GetComponent<PlayerController>().bashObject = this;
+            other.transform.GetComponent<PlayerController>().canBash = true;
+            transform.GetChild(0).GetComponent<MeshRenderer>().enabled = true;
         }
     }
 
-    private void OnCollisionExit(Collision collision)
+    private void OnTriggerExit(Collider other)
     {
-        if (collision.transform.CompareTag("Player"))
+        if (other.transform.CompareTag("Player"))
         {
-            collision.transform.GetComponent<PlayerController>().bashObject = null;
+            other.transform.GetComponent<PlayerController>().bashObject = null;
+            other.transform.GetComponent<PlayerController>().canBash = false;
+            transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
         }
     }
 }
