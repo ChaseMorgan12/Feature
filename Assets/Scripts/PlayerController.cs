@@ -22,14 +22,17 @@ public class PlayerController : MonoBehaviour
     public bool canBash = false;
     public BashPhase bashPhase = 0;
     public BashableObject bashObject;
+    public GameObject bashArrowPrefab;
+    private GameObject bashArrow;
 
     private float move;
     private float bash;
     private float jump;
-    private Vector2 mousePos;
 
-    private float time;
-    private float lerpDuration = 0.5f;
+    private Vector3 mouseDelta, mousePos3D, mousePos;
+
+    private float time = 0;
+    private readonly float lerpDuration = 0.5f;
 
 
     private void Awake()
@@ -46,6 +49,7 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+
         if (isGrounded())
         {
             GetComponent<Rigidbody>().AddRelativeForce(new Vector3(move * speed * Time.deltaTime, jumpHeight * jump * Time.deltaTime, 0), ForceMode.Impulse);
@@ -55,39 +59,36 @@ public class PlayerController : MonoBehaviour
             GetComponent<Rigidbody>().AddRelativeForce(new Vector3(move * speed * Time.deltaTime, 0, 0), ForceMode.Impulse);
         }
 
-        if(move == 0)
-        {
-            GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
-        }
-
-        if(bash == 1)
-        {
-            StartBash();
-        }
-        else if(bash == 0 && bashPhase != BashPhase.None || bashPhase != BashPhase.End)
-        {
-            bashPhase = BashPhase.End;
-            EndBash();
-        }
-
     }
 
     private void Update()
     {
         BashMove();
 
-        if(bashPhase == BashPhase.Start)
+        if(bashPhase == BashPhase.Start || bashPhase == BashPhase.Active)
         {
             if(time < lerpDuration)
             {
+                bashPhase = BashPhase.Active;
                 Time.timeScale = Mathf.Lerp(1, 0, time/lerpDuration);
                 time += Time.deltaTime;
+                DuringBash();
             }
             else
             {
                 Time.timeScale = 0;
                 DuringBash();
             }
+        }
+
+        if (bash == 1)
+        {
+            StartBash();
+        }
+        else if ((bash == 0 && bashPhase != BashPhase.None) && bashPhase != BashPhase.End)
+        {
+            bashPhase = BashPhase.End;
+            EndBash();
         }
     }
 
@@ -112,7 +113,18 @@ public class PlayerController : MonoBehaviour
         if(bashPhase == BashPhase.Active)
         {
             mousePos = Input.mousePosition;
-            
+            mousePos.z = -Camera.main.transform.position.z;
+            mousePos3D = Camera.main.ScreenToWorldPoint(mousePos);
+            mouseDelta = mousePos3D - bashObject.transform.position;
+
+            float maxMagnitude = bashObject.GetComponent<SphereCollider>().radius;
+            if(mouseDelta.magnitude > maxMagnitude)
+            {
+                mouseDelta.Normalize();
+                mouseDelta *= maxMagnitude;
+            }
+
+            bashArrow.transform.position = bashObject.transform.position + mouseDelta;
         }
     }
 
@@ -133,7 +145,7 @@ public class PlayerController : MonoBehaviour
     {
         bool grounded = false;
 
-        if (Physics.Raycast(transform.position, Vector3.down, transform.localScale.y / 2 + 0.5f))
+        if (Physics.Raycast(transform.position, Vector3.down, transform.localScale.y / 2 + 1f))
         {
             grounded = true;
         }
@@ -143,16 +155,24 @@ public class PlayerController : MonoBehaviour
 
     private void StartBash()
     {
-        if(bashPhase != BashPhase.Start)
+        if(bashPhase == BashPhase.None)
         {
             bashPhase = BashPhase.Start;
+            GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
+            move = 0;
+            jump = 0;
+            bashArrow = Instantiate(bashArrowPrefab, bashObject.transform.position, Quaternion.identity, transform.parent);
             GetComponent<Rigidbody>().isKinematic = true;
         }
     }
 
     private void DuringBash()
     {
-        if(bashPhase == BashPhase.Active)
+        if(bashPhase != BashPhase.Active)
+        {
+            bashPhase = BashPhase.Active;
+        }
+        else
         {
 
         }
@@ -160,8 +180,16 @@ public class PlayerController : MonoBehaviour
 
     private void EndBash()
     {
+        bashObject.Bashed();
         bashPhase = BashPhase.None;
         Time.timeScale = 1;
+        GetComponent<Rigidbody>().isKinematic = false;
+        Destroy(bashArrow);
+        GetComponent<Rigidbody>().velocity = mouseDelta * 5f;
+        if (bashObject.isProjectile)
+        {
+            bashObject.GetComponent<Rigidbody>().velocity = -mouseDelta * 5f;
+        }
     }
 
 }
