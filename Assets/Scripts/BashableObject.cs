@@ -44,7 +44,6 @@ public class BashableObject : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log(other.name);
         if (other.CompareTag("Player") && isBashable)
         {
             other.transform.GetComponent<PlayerController>().bashObject = this;
@@ -53,6 +52,10 @@ public class BashableObject : MonoBehaviour
         }
         else if((!other.CompareTag("Player") && !other.CompareTag("BashObject")) && isProjectile)
         {
+            if (other.CompareTag("Enemy"))
+            {
+                other.GetComponent<Enemy>().health--;
+            }
             Destroy(gameObject);
         }
     }

@@ -64,8 +64,9 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         BashMove();
+        Camera.main.transform.position = transform.position + new Vector3(0, 5, -10);
 
-        if(bashPhase == BashPhase.Start || bashPhase == BashPhase.Active)
+        if (bashPhase == BashPhase.Start || bashPhase == BashPhase.Active)
         {
             if(time < lerpDuration)
             {
@@ -185,10 +186,10 @@ public class PlayerController : MonoBehaviour
         Time.timeScale = 1;
         GetComponent<Rigidbody>().isKinematic = false;
         Destroy(bashArrow);
-        GetComponent<Rigidbody>().velocity = mouseDelta * 5f;
+        GetComponent<Rigidbody>().velocity = mouseDelta * 7f;
         if (bashObject.isProjectile)
         {
-            bashObject.GetComponent<Rigidbody>().velocity = -mouseDelta * 5f;
+            bashObject.GetComponent<Rigidbody>().velocity = -mouseDelta * 7f;
         }
     }
 
